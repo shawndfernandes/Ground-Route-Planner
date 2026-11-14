@@ -35,6 +35,7 @@ export function initGroundGlobe(containerId) {
     navigationHelpButton: false,
     requestRenderMode: true
   });
+  viewer.scene.screenSpaceCameraController.minimumZoomDistance = 250.0;
   viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(-88.0, 40.5, 1900000) });
 
   const sources = {
@@ -124,7 +125,10 @@ export class GroundRadarController {
     }
     if (!this.enabled) return;
     this.layer = this.viewer.imageryLayers.addImageryProvider(
-      new Cesium.UrlTemplateImageryProvider({ url: frame.tile_url })
+      new Cesium.UrlTemplateImageryProvider({
+        url: frame.tile_url,
+        maximumLevel: 7
+      })
     );
     this.layer.alpha = this.alpha;
     this.viewer.scene.requestRender();
