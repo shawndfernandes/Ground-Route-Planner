@@ -1,0 +1,6 @@
+ground-route-engine/frontend/
+├── index.html          # Loads ground_app.js as type="module"
+├── ground_map.js       # Module 1: CesiumJS Globe, Weather.com Radar Loop & Geometry Helpers
+├── ground_chart.js     # Module 2: 2D Highway Elevation & Road Temperature Canvas
+├── ground_renderer.js  # Module 3: Trains, Snow/Flood Polygons, Construction, Blockages & Rail Crossings
+└── ground_app.js       # Module 4: HUD Event Listeners, Routing & Snapshot Loop

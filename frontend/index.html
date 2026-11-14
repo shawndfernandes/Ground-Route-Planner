@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ground Highway & Multi-Hazard Pathfinder</title>
+  <link href="cesium/Widgets/widgets.css" rel="stylesheet" />
+  <script src="cesium/Cesium.js"></script>
+  <style>
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; background: #0b0f19; color: #fff; }
+    #cesiumContainer { width: 100%; height: 74%; }
+    #hud { position: absolute; top: 14px; left: 14px; z-index: 10; background: rgba(15, 23, 42, 0.94); padding: 14px; border-radius: 8px; border: 1px solid #334155; width: 435px; max-height: 70vh; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.55); }
+    .row { display: flex; gap: 5px; margin-bottom: 7px; align-items: center; flex-wrap: wrap; }
+    input[type="text"], input:not([type]) { flex: 1; padding: 7px; border-radius: 4px; border: 1px solid #475569; background: #1e293b; color: #fff; font-size: 12px; min-width: 110px; }
+    button { padding: 6px 9px; border-radius: 4px; border: 1px solid #475569; background: #1e293b; color: #cbd5e1; font-weight: 700; cursor: pointer; font-size: 11px; }
+    button.primary { background: #10b981; border: none; color: #fff; font-size: 12px; padding: 7px 12px; }
+    button.active { background: #0284c7; border-color: #38bdf8; color: #fff; }
+    .wx-box { margin: 6px 0; padding: 8px; background: #0c4a6e; border: 1px solid #0284c7; border-radius: 6px; font-size: 11.5px; line-height: 1.45; }
+    .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #334155; font-size: 11px; color: #cbd5e1; }
+    .leg-item { display: flex; align-items: center; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    #card { display: none; margin-top: 8px; padding: 10px; background: #1e293b; border-radius: 6px; border-left: 4px solid #22c55e; font-size: 12px; line-height: 1.5; }
+    #profilePanel { width: 100%; height: 26%; background: #0f172a; border-top: 1px solid #334155; padding: 8px 16px; box-sizing: border-box; }
+    canvas { width: 100%; height: 84%; background: #020617; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <h3 style="margin:0; font-size:15px;">Ground Highway & Multi-Hazard Pathfinder</h3>
+      <button onclick="manualGroundRefresh(this)" title="Refresh Live Radar, Alerts & Trains">↻ Refresh</button>
+    </div>
+    <div class="row">
+      <input id="orig" placeholder="Origin City" value="Columbus, OH" />
+      <input id="dest" placeholder="Destination" value="Chicago, IL" />
+      <button class="primary" onclick="planDrive()">Route</button>
+    </div>
+    <div class="row">
+      <button class="map-tab" onclick="setGroundMapLayer('hybrid', this)">Hybrid</button>
+      <button class="map-tab active" onclick="setGroundMapLayer('roadmap', this)">Roadmap</button>
+      <button class="map-tab" onclick="setGroundMapLayer('satellite', this)">Satellite</button>
+      <button class="map-tab" onclick="setGroundMapLayer('terrain', this)">Terrain</button>
+    </div>
+    <div class="row">
+      <button id="radarBtn" class="active" onclick="toggleGroundRadar(this)">Radar: ON</button>
+      <button onclick="toggleGroundRadarAnim(this)">▶ Animate</button>
+      <button class="active" onclick="toggleLayer('alerts', this)">Snow/Floods: ON</button>
+      <button class="active" onclick="toggleLayer('infra', this)">Work/Rail/Blocks: ON</button>
+      <button class="active" onclick="toggleLayer('vehicles', this)">Trains: ON</button>
+    </div>
+    <div class="row">
+      <span style="font-size:11px; color:#94a3b8;">Radar Opacity:</span>
+      <input type="range" min="0" max="100" value="75" style="flex:1; accent-color:#38bdf8;" oninput="setGroundRadarOpacity(this.value)" />
+    </div>
+    <div id="twcGroundBox" class="wx-box">Loading Weather.com Radar & Road Outlook...</div>
+    <div id="status" style="font-size:11.5px; color:#94a3b8;">Loading NWS Snow/Floods, Rail & Road Hazards...</div>
+    <div id="card"></div>
+    <div class="legend">
+      <div class="leg-item"><span class="dot" style="background:#38bdf8;"></span>Snow / Ice Polygon</div>
+      <div class="leg-item"><span class="dot" style="background:#a855f7;"></span>Flood Warning Zone</div>
+      <div class="leg-item"><span class="dot" style="background:#f97316;"></span>Road Construction</div>
+      <div class="leg-item"><span class="dot" style="background:#ef4444;"></span>Road Blockage / Gate</div>
+      <div class="leg-item"><span class="dot" style="background:#eab308;"></span>Railroad Train Crossing</div>
+      <div class="leg-item"><span class="dot" style="background:#22c55e;"></span>Safe Detour Highway</div>
+    </div>
+    <div style="margin-top:8px; padding-top:6px; border-top:1px solid #334155; font-size:10.5px; color:#cbd5e1;">
+      <div style="font-weight:700; margin-bottom:4px;">Weather.com Radar Intensity</div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span>Light</span>
+        <div style="flex:1; height:8px; border-radius:4px; background:linear-gradient(90deg, #38bdf8 0%, #22c55e 30%, #facc15 55%, #f97316 78%, #ef4444 92%, #d946ef 100%);"></div>
+        <span>Heavy / Hail</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:9.5px; color:#94a3b8; margin-top:2px;">
+        <span>Snow / Mix</span>
+        <span>Mod Rain</span>
+        <span>Thunderstorm</span>
+      </div>
+    </div>
+  </div>
+  <div id="cesiumContainer"></div>
+  <div id="profilePanel">
+    <div style="font-size:12px; color:#cbd5e1; margin-bottom:4px;">Highway Elevation (ft) & Road Temperature (°F) Profile Along Safe Route</div>
+    <canvas id="roadChart"></canvas>
+  </div>
+  <script type="module" src="ground_app.js"></script>
+</body>
+</html>

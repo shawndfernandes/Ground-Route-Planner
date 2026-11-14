@@ -1,0 +1,23 @@
+# Python Virtual Environment & Bytecode
+venv/
+backend/venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Local CesiumJS Assets (installed/linked via setup_cesium.sh)
+frontend/cesium
+frontend/cesium/
+*.zip
+
+# Environment Variables & Secrets
+.env
+backend/.env
+*.env.local
+
+# Logs & OS Artifacts
+*.log
+.DS_Store
+Thumbs.db
