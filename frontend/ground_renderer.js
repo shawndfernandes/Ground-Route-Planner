@@ -57,6 +57,9 @@ export function renderWeatherHazards(alertSource, features) {
         },
         polygon: {
           hierarchy: Cesium.Cartesian3.fromDegreesArray(flat),
+          height: 0,
+          heightReference: Cesium.HeightReference.NONE,
+          height: 0,
           material: polyColor,
           outline: true,
           outlineColor: edgeColor
